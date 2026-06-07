@@ -1,6 +1,6 @@
 {
-  "name": "Coffee Brew Calculator",
-  "short_name": "Brew Calc",
+  "name": "DripS",
+  "short_name": "DripS",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#faf9f8",
