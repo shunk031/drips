@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Brew Calculator</title>
+    <!-- Tailwind CSSの読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        coffee: {
+                            50: '#fdf8f6',
+                            100: '#f2e8e5',
+                            200: '#eaddd7',
+                            300: '#e0cec7',
+                            400: '#d2bab0',
+                            500: '#a37a6a',
+                            600: '#8b6456',
+                            700: '#6f4e37',
+                            800: '#5c3f2d',
+                            900: '#462e20',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 数値入力のスピンボタンを隠す */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+        
+        /* スライダーのカスタムスタイル */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%;
+            background: #6f4e37; cursor: pointer; margin-top: -8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #eaddd7; border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+    </style>
+</head>
+<body class="bg-[#faf9f8] text-stone-800 font-sans flex flex-col min-h-screen selection:bg-coffee-200">
+
+    <!-- Webサイトらしいヘッダー -->
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 flex-shrink-0">
+                <div class="bg-coffee-800 text-white p-2 rounded-lg shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/>
+                    </svg>
+                </div>
+                <!-- スマホでは非表示 (hidden sm:block) -->
+                <h1 class="text-xl font-bold text-stone-800 tracking-tight hidden sm:block">Brew Calculator</h1>
+            </div>
+            
+            <!-- モード切り替え (常に横並び、折り返しなし) -->
+            <div class="bg-stone-100 p-1 rounded-xl flex shadow-inner w-full max-w-[320px] sm:max-w-none sm:w-[280px]">
+                <button id="modeBeansBtn" class="flex-1 py-1.5 sm:py-2 text-[13px] sm:text-sm font-bold bg-white text-coffee-800 shadow-sm rounded-lg transition-all whitespace-nowrap px-2" onclick="setMode('beans')">粉から計算</button>
+                <button id="modeYieldBtn" class="flex-1 py-1.5 sm:py-2 text-[13px] sm:text-sm font-bold text-stone-500 rounded-lg transition-all hover:text-stone-700 whitespace-nowrap px-2" onclick="setMode('yield')">総量から逆算</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <!-- gapを調整して、画面が狭い時の全体の隙間を減らす -->
+    <main class="flex-grow w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-start">
+        
+        <!-- ==============================================
+             左パネル：設定と入力（幅固定）
+             ============================================== -->
+        <aside class="w-full lg:w-[340px] xl:w-[380px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-stone-200 p-5 sm:p-6 flex flex-col gap-5 sm:gap-6 lg:sticky lg:top-24">
+            
+            <!-- メインの数値入力 -->
+            <div>
+                <label id="mainInputLabel" class="block text-sm font-bold text-stone-700 mb-2">コーヒーの粉 (Coffee Beans)</label>
+                <div class="relative flex items-center">
+                    <input type="number" id="mainInput" value="15" min="1" step="0.1" inputmode="decimal"
+                           class="w-full text-2xl font-bold text-stone-800 bg-stone-50 border border-stone-200 rounded-xl py-2.5 px-4 text-center focus:border-coffee-500 focus:bg-white focus:ring-4 focus:ring-coffee-500/10 focus:outline-none transition-all tabular-nums shadow-inner">
+                    <span id="mainInputUnit" class="absolute right-4 text-lg font-bold text-stone-400">g</span>
+                </div>
+            </div>
+
+            <hr class="border-stone-100">
+
+            <!-- スライダー設定群 -->
+            <div class="space-y-6">
+                <!-- 抽出比率 -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-sm font-bold text-stone-700 flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-coffee-600"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                            抽出比率 (Ratio)
+                        </label>
+                        <div class="bg-coffee-50 text-coffee-800 font-bold border border-coffee-200 rounded px-2 py-0.5 text-sm">
+                            1 : <span id="ratioDisplay" class="tabular-nums">15.0</span>
+                        </div>
+                    </div>
+                    <input type="range" id="ratioSlider" min="10" max="20" step="0.5" value="15.0">
+                    <div class="flex justify-between text-xs font-medium text-stone-400 mt-2 px-1">
+                        <span>1:10(濃い)</span><span>1:15(標準)</span><span>1:20(薄い)</span>
+                    </div>
+                </div>
+
+                <!-- 吸水率 -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-sm font-bold text-stone-700 flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-500"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                            粉の吸水率 (Retention)
+                        </label>
+                        <div class="bg-stone-50 text-stone-700 font-bold border border-stone-200 rounded px-2 py-0.5 text-sm">
+                            <span id="retentionDisplay" class="tabular-nums">2.0</span> ml/g
+                        </div>
+                    </div>
+                    <input type="range" id="retentionSlider" min="1.0" max="3.0" step="0.1" value="2.0">
+                    <div class="flex justify-between text-xs font-medium text-stone-400 mt-2 px-1">
+                        <span>浅煎り</span><span>標準</span><span>深煎り</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==============================================
+             右パネル：結果表示（HOTとICEを横並びに配置して縦幅を抑える）
+             ============================================== -->
+        <section class="w-full lg:flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
+            
+            <!-- 【HOT カード】 -->
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border border-stone-200 shadow-sm flex flex-col relative overflow-hidden group hover:border-orange-200 transition-colors">
+                <!-- 背景装飾 -->
+                <div class="absolute right-[-20px] top-[-20px] text-orange-500/5 transform rotate-12 pointer-events-none group-hover:text-orange-500/10 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></svg>
+                </div>
+
+                <!-- バッジ部分 -->
+                <!-- 下の余白を少し詰める mb-4 -> mb-3 -->
+                <div class="flex justify-start z-10 mb-3 sm:mb-4">
+                    <span class="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-1.5 border border-orange-100">
+                        ♨️ HOT
+                    </span>
+                </div>
+
+                <!-- HOT 結果 (粉からモード) -->
+                <!-- 変な空間を作っていた flex-grow と justify-center を削除 -->
+                <div id="hotResultBeans" class="relative z-10 flex flex-col mt-1">
+                    <div class="flex gap-2 sm:gap-3 w-full">
+                        <div class="flex-1 bg-orange-50/80 rounded-xl p-3 sm:p-4 border border-orange-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[10px] sm:text-xs font-bold text-stone-500 mb-1 whitespace-nowrap">注ぐお湯 (Pour)</p>
+                            <div class="flex items-baseline gap-1">
+                                <span id="hotPour" class="text-2xl sm:text-3xl font-bold text-orange-600 tabular-nums">255</span>
+                                <span class="text-[10px] sm:text-sm font-bold text-orange-400">ml</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-orange-50/80 rounded-xl p-3 sm:p-4 border border-orange-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[10px] sm:text-xs font-bold text-stone-500 mb-1 whitespace-nowrap">予想できあがり</p>
+                            <div class="flex items-baseline gap-1">
+                                <span id="hotYield" class="text-2xl sm:text-3xl font-bold text-orange-900 tabular-nums">225</span>
+                                <span class="text-[10px] sm:text-sm font-bold text-orange-700">ml</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HOT 結果 (総量からモード) -->
+                <div id="hotResultYield" class="hidden relative z-10 flex flex-col mt-1">
+                    <div class="flex gap-2 sm:gap-3 w-full">
+                        <div class="flex-1 bg-orange-50/80 rounded-xl p-3 sm:p-4 border border-orange-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[10px] sm:text-xs font-bold text-stone-500 mb-1 whitespace-nowrap">注ぐお湯 <span class="text-[9px] sm:hidden">(吸水考慮)</span></p>
+                            <div class="flex items-baseline gap-1">
+                                <span id="hotReqPour" class="text-2xl sm:text-3xl font-bold text-orange-600 tabular-nums">340</span>
+                                <span class="text-[10px] sm:text-sm font-bold text-orange-400">ml</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-orange-50/80 rounded-xl p-3 sm:p-4 border border-orange-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[10px] sm:text-xs font-bold text-stone-500 mb-1 whitespace-nowrap">必要な粉</p>
+                            <div class="flex items-baseline gap-1">
+                                <span id="hotReqBeans" class="text-2xl sm:text-3xl font-bold text-orange-900 tabular-nums">20.0</span>
+                                <span class="text-[10px] sm:text-sm font-bold text-orange-700">g</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 【ICE カード】 -->
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border border-stone-200 shadow-sm flex flex-col relative overflow-hidden group hover:border-blue-200 transition-colors">
+                <!-- 背景装飾 -->
+                <div class="absolute right-[-20px] top-[-20px] text-blue-500/5 transform -rotate-12 pointer-events-none group-hover:text-blue-500/10 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="m10 20-2.5-2.5"/><path d="M14 20l2.5-2.5"/><path d="m14 4 2.5 2.5"/><path d="m10 4-2.5 2.5"/><path d="M2 10h4"/><path d="M18 10h4"/><path d="M2 14h4"/><path d="M18 14h4"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+                </div>
+
+                <!-- バッジ部分 -->
+                <!-- 下の余白を少し詰める mb-4 -> mb-3 -->
+                <div class="flex justify-between items-center z-10 mb-3 sm:mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-sm font-bold inline-flex items-center gap-1.5 border border-blue-100">
+                            🧊 ICED
+                        </span>
+                        <span class="text-[11px] sm:text-xs font-bold text-stone-400 border border-stone-200 rounded-md px-2 py-1 bg-stone-50">急冷式</span>
+                    </div>
+                </div>
+
+                <!-- ICE 結果 (粉からモード) -->
+                <!-- 変な空間を作っていた flex-grow と justify-center を削除。狭い画面ではみ出さないよう微調整 -->
+                <div id="iceResultBeans" class="relative z-10 flex flex-col mt-1">
+                    <div class="flex gap-2 w-full">
+                        <div class="flex-1 bg-blue-50/80 rounded-xl p-2 sm:p-3 border border-blue-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[9px] min-[375px]:text-[10px] sm:text-xs font-bold text-stone-500 mb-0.5 sm:mb-1 whitespace-nowrap">注ぐ熱湯</p>
+                            <div class="flex items-baseline gap-0.5 sm:gap-1">
+                                <span id="icePour" class="text-xl min-[375px]:text-2xl sm:text-3xl font-bold text-blue-600 tabular-nums">165</span>
+                                <span class="text-[9px] min-[375px]:text-[10px] sm:text-sm font-bold text-blue-400">ml</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-cyan-50/80 rounded-xl p-2 sm:p-3 border border-cyan-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[9px] min-[375px]:text-[10px] sm:text-xs font-bold text-stone-500 mb-0.5 sm:mb-1 whitespace-nowrap">氷の量</p>
+                            <div class="flex items-baseline gap-0.5 sm:gap-1">
+                                <span id="iceAmount" class="text-xl min-[375px]:text-2xl sm:text-3xl font-bold text-cyan-500 tabular-nums">90</span>
+                                <span class="text-[9px] min-[375px]:text-[10px] sm:text-sm font-bold text-cyan-300">g</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-blue-50/80 rounded-xl p-2 sm:p-3 border border-blue-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[9px] min-[375px]:text-[10px] sm:text-xs font-bold text-stone-500 mb-0.5 sm:mb-1 whitespace-nowrap">できあがり</p>
+                            <div class="flex items-baseline gap-0.5 sm:gap-1">
+                                <span id="iceYield" class="text-xl min-[375px]:text-2xl sm:text-3xl font-bold text-blue-900 tabular-nums">225</span>
+                                <span class="text-[9px] min-[375px]:text-[10px] sm:text-sm font-bold text-blue-700">ml</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ICE 結果 (総量からモード) -->
+                <div id="iceResultYield" class="hidden relative z-10 flex flex-col mt-1">
+                    <div class="flex gap-2 w-full">
+                        <div class="flex-1 bg-blue-50/80 rounded-xl p-2 sm:p-3 border border-blue-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[9px] min-[375px]:text-[10px] sm:text-xs font-bold text-stone-500 mb-0.5 sm:mb-1 whitespace-nowrap">注ぐ熱湯</p>
+                            <div class="flex items-baseline gap-0.5 sm:gap-1">
+                                <span id="iceReqPour" class="text-xl min-[375px]:text-2xl sm:text-3xl font-bold text-blue-600 tabular-nums">220</span>
+                                <span class="text-[9px] min-[375px]:text-[10px] sm:text-sm font-bold text-blue-400">ml</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-cyan-50/80 rounded-xl p-2 sm:p-3 border border-cyan-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[9px] min-[375px]:text-[10px] sm:text-xs font-bold text-stone-500 mb-0.5 sm:mb-1 whitespace-nowrap flex items-center justify-center">氷の量 <span class="text-[8px] bg-cyan-100 text-cyan-600 px-1 rounded ml-0.5 hidden min-[375px]:inline-block">40%</span></p>
+                            <div class="flex items-baseline gap-0.5 sm:gap-1">
+                                <span id="iceReqAmount" class="text-xl min-[375px]:text-2xl sm:text-3xl font-bold text-cyan-500 tabular-nums">120</span>
+                                <span class="text-[9px] min-[375px]:text-[10px] sm:text-sm font-bold text-cyan-300">g</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-blue-50/80 rounded-xl p-2 sm:p-3 border border-blue-100/60 flex flex-col items-center justify-center text-center">
+                            <p class="text-[9px] min-[375px]:text-[10px] sm:text-xs font-bold text-stone-500 mb-0.5 sm:mb-1 whitespace-nowrap">必要な粉</p>
+                            <div class="flex items-baseline gap-0.5 sm:gap-1">
+                                <span id="iceReqBeans" class="text-xl min-[375px]:text-2xl sm:text-3xl font-bold text-blue-900 tabular-nums">20.0</span>
+                                <span class="text-[9px] min-[375px]:text-[10px] sm:text-sm font-bold text-blue-700">g</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // DOM要素の取得
+        const UI = {
+            modeBeansBtn: document.getElementById('modeBeansBtn'),
+            modeYieldBtn: document.getElementById('modeYieldBtn'),
+            mainInputLabel: document.getElementById('mainInputLabel'),
+            mainInput: document.getElementById('mainInput'),
+            mainInputUnit: document.getElementById('mainInputUnit'),
+            ratioSlider: document.getElementById('ratioSlider'),
+            ratioDisplay: document.getElementById('ratioDisplay'),
+            retentionSlider: document.getElementById('retentionSlider'),
+            retentionDisplay: document.getElementById('retentionDisplay'),
+            
+            hotResultBeans: document.getElementById('hotResultBeans'),
+            hotResultYield: document.getElementById('hotResultYield'),
+            iceResultBeans: document.getElementById('iceResultBeans'),
+            iceResultYield: document.getElementById('iceResultYield'),
+            
+            hotPour: document.getElementById('hotPour'),
+            hotYield: document.getElementById('hotYield'),
+            hotReqBeans: document.getElementById('hotReqBeans'),
+            hotReqPour: document.getElementById('hotReqPour'),
+            
+            icePour: document.getElementById('icePour'),
+            iceAmount: document.getElementById('iceAmount'),
+            iceYield: document.getElementById('iceYield'),
+            iceReqBeans: document.getElementById('iceReqBeans'),
+            iceReqPour: document.getElementById('iceReqPour'),
+            iceReqAmount: document.getElementById('iceReqAmount'),
+        };
+
+        let currentMode = 'beans';
+        let savedBeansValue = 15;
+        let savedYieldValue = 300;
+
+        function setMode(mode) {
+            if (currentMode === 'beans') {
+                savedBeansValue = parseFloat(UI.mainInput.value) || 15;
+            } else {
+                savedYieldValue = parseFloat(UI.mainInput.value) || 300;
+            }
+
+            currentMode = mode;
+            
+            if (mode === 'beans') {
+                UI.modeBeansBtn.className = "flex-1 py-1.5 sm:py-2 text-[13px] sm:text-sm font-bold bg-white text-coffee-800 shadow-sm rounded-lg transition-all whitespace-nowrap px-2";
+                UI.modeYieldBtn.className = "flex-1 py-1.5 sm:py-2 text-[13px] sm:text-sm font-bold text-stone-500 rounded-lg transition-all hover:text-stone-700 whitespace-nowrap px-2";
+                
+                UI.mainInputLabel.textContent = "コーヒーの粉 (Coffee Beans)";
+                UI.mainInputUnit.textContent = "g";
+                UI.mainInput.value = savedBeansValue;
+                
+                UI.hotResultBeans.classList.remove('hidden');
+                UI.hotResultYield.classList.add('hidden');
+                UI.iceResultBeans.classList.remove('hidden');
+                UI.iceResultYield.classList.add('hidden');
+            } else {
+                UI.modeYieldBtn.className = "flex-1 py-1.5 sm:py-2 text-[13px] sm:text-sm font-bold bg-white text-coffee-800 shadow-sm rounded-lg transition-all whitespace-nowrap px-2";
+                UI.modeBeansBtn.className = "flex-1 py-1.5 sm:py-2 text-[13px] sm:text-sm font-bold text-stone-500 rounded-lg transition-all hover:text-stone-700 whitespace-nowrap px-2";
+                
+                UI.mainInputLabel.textContent = "作りたい量 (Target Yield)";
+                UI.mainInputUnit.textContent = "ml";
+                UI.mainInput.value = savedYieldValue;
+                
+                UI.hotResultYield.classList.remove('hidden');
+                UI.hotResultBeans.classList.add('hidden');
+                UI.iceResultYield.classList.remove('hidden');
+                UI.iceResultBeans.classList.add('hidden');
+            }
+            calculate();
+        }
+
+        function calculate() {
+            const val = parseFloat(UI.mainInput.value);
+            const ratio = parseFloat(UI.ratioSlider.value);
+            const retention = parseFloat(UI.retentionSlider.value);
+            
+            UI.ratioDisplay.textContent = ratio.toFixed(1);
+            UI.retentionDisplay.textContent = retention.toFixed(1);
+            
+            if (isNaN(val) || val <= 0) return;
+
+            if (currentMode === 'beans') {
+                const targetYield = val * ratio;
+                const retainedWater = val * retention;
+                
+                const hotPour = targetYield + retainedWater;
+                UI.hotPour.textContent = Math.round(hotPour);
+                UI.hotYield.textContent = Math.round(targetYield);
+                
+                const iceYieldHotPart = targetYield * 0.6;
+                const iceYieldIcePart = targetYield * 0.4;
+                const icePour = iceYieldHotPart + retainedWater;
+                
+                UI.icePour.textContent = Math.round(icePour);
+                UI.iceAmount.textContent = Math.round(iceYieldIcePart);
+                UI.iceYield.textContent = Math.round(targetYield);
+                
+            } else {
+                const requiredBeans = val / ratio;
+                const retainedWater = requiredBeans * retention;
+                
+                UI.hotReqBeans.textContent = requiredBeans.toFixed(1);
+                UI.hotReqPour.textContent = Math.round(val + retainedWater);
+                
+                UI.iceReqBeans.textContent = requiredBeans.toFixed(1);
+                const waterPart = val * 0.6;
+                const icePart = val * 0.4;
+                UI.iceReqPour.textContent = Math.round(waterPart + retainedWater);
+                UI.iceReqAmount.textContent = Math.round(icePart);
+            }
+        }
+
+        UI.ratioSlider.addEventListener('input', calculate);
+        UI.retentionSlider.addEventListener('input', calculate);
+        UI.mainInput.addEventListener('input', calculate);
+
+        calculate();
+    </script>
+</body>
+</html>
