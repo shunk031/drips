@@ -1,9 +1,10 @@
-const CACHE_NAME = 'brew-calc-v1';
+const CACHE_NAME = 'brew-calc-v2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './assets/images/logo.png'
+  './assets/images/logo.png',
+  './assets/images/icon-maskable.png'
 ];
 
 // インストール時にリソースをキャッシュ
