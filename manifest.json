@@ -3,7 +3,7 @@
   "short_name": "DripS",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#faf9f8",
+  "background_color": "#fbf9ef",
   "theme_color": "#faf9f8",
   "icons": [
     {
